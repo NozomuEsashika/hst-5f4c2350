@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<meta name="theme-color" content="#0c0f16">
+<title>配信回線チェック</title>
+<link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+<header class="top">
+  <h1>配信回線チェック</h1>
+  <p>配信に使う回線の速さを測って、結果を残せます</p>
+</header>
+
+<main>
+  <section class="panel" aria-labelledby="h-plan">
+    <h2 id="h-plan">配信ビットレート</h2>
+    <div class="plan-row">
+      <input id="bitrate" type="number" inputmode="decimal" min="0.5" max="200" step="0.5" value="8" aria-label="配信ビットレート(Mbps)">
+      <span class="unit">Mbps</span>
+    </div>
+    <div class="presets" role="group" aria-label="YouTube の推奨値">
+      <button type="button" data-v="8">720p/30fps<small>8</small></button>
+      <button type="button" data-v="8">720p/60fps<small>8</small></button>
+      <button type="button" data-v="14">1080p/30fps<small>14</small></button>
+      <button type="button" data-v="17">1080p/60fps<small>17</small></button>
+      <button type="button" data-v="21">1440p/30fps<small>21</small></button>
+      <button type="button" data-v="34">1440p/60fps<small>34</small></button>
+      <button type="button" data-v="42">4K/30fps<small>42</small></button>
+      <button type="button" data-v="50">4K/60fps<small>50</small></button>
+    </div>
+    <p class="note">数字は YouTube Live の推奨値(H.264・Mbps)。映像のビットレートを入れてください(音声分は含みません)</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-run">
+    <h2 id="h-run">回線を測る</h2>
+    <div class="meters">
+      <div class="meter">
+        <div class="meter-label">上り(アップロード)</div>
+        <div class="meter-value"><span id="up">--</span><small>Mbps</small></div>
+        <div class="bar"><div id="up-bar"></div></div>
+      </div>
+      <div class="meter">
+        <div class="meter-label">下り(ダウンロード)</div>
+        <div class="meter-value"><span id="down">--</span><small>Mbps</small></div>
+        <div class="bar"><div id="down-bar"></div></div>
+      </div>
+    </div>
+    <p id="status" class="status" aria-live="polite"></p>
+    <button id="go" class="go" type="button">測定開始</button>
+    <p class="note">上り・下りを約10秒ずつ測ります。終わるまで画面を開いたままにしてください。測定には M-Lab のサーバーを使い、結果と IP アドレスは M-Lab で公開されます(<a href="https://www.measurementlab.net/privacy/" target="_blank" rel="noopener">データ方針</a>)</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-result">
+    <h2 id="h-result">判定</h2>
+    <div id="verdict" class="verdict v-none">
+      <div class="v-title" id="v-title">未測定</div>
+      <div class="v-body" id="v-body">測定するとここに結果が出ます</div>
+    </div>
+    <dl class="detail">
+      <dt>測定サーバー</dt><dd id="d-server">-</dd>
+      <dt>遅延(RTT)</dt><dd id="d-rtt">-</dd>
+      <dt>ジッター</dt><dd id="d-jitter">-</dd>
+      <dt>上り 最低 / 最高</dt><dd id="d-up-range">-</dd>
+      <dt>下り 最低 / 最高</dt><dd id="d-down-range">-</dd>
+    </dl>
+    <p class="note">最低・最高は1秒ごとの速さです。測った時点の値で、本番の品質を保証するものではありません。</p>
+
+    <div id="save-box" class="save-box" hidden>
+      <h3>記録する</h3>
+      <label>会場<input id="m-place" type="text" maxlength="80" placeholder="例: 〇〇ホール 2F 控室"></label>
+      <label>回線
+        <select id="m-line">
+          <option value="">選ばない</option>
+          <option>有線LAN</option>
+          <option>会場Wi-Fi</option>
+          <option>モバイル(5G/4G)</option>
+          <option>持ち込みルーター</option>
+          <option>その他</option>
+        </select>
+      </label>
+      <label>メモ<textarea id="m-memo" rows="3" maxlength="1000" placeholder="例: 壁のLAN口B。昼休みに測定"></textarea></label>
+      <div class="row-btns">
+        <button id="save" type="button" class="primary">記録する</button>
+        <button id="copy-now" type="button">コピー</button>
+        <button id="img-now" type="button">画像保存</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-log">
+    <h2 id="h-log">記録一覧</h2>
+    <p class="note">記録はこの端末のブラウザに保存されます。消えることがあるので、必要なものは CSV で書き出してください。</p>
+    <div class="row-btns">
+      <button id="csv" type="button">CSV に書き出す</button>
+      <button id="clear" type="button" class="danger">すべて削除</button>
+    </div>
+    <ol id="log" class="log"></ol>
+    <p id="log-empty" class="note">まだ記録はありません</p>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<footer>
+  <p>測定には M-Lab の <a href="https://github.com/m-lab/ndt7-js" target="_blank" rel="noopener">ndt7-js</a>(Apache License 2.0, <a href="vendor/LICENSE">ライセンス全文</a>)を使っています。</p>
+</footer>
+
+<script src="vendor/ndt7.js"></script>
+<script src="app.js?v=3"></script>
+</body>
+</html>
